@@ -11,7 +11,7 @@ N <- 100
 # Scale parameter of first (control) group
 scale_1 <- 1
 # Scale parameter of the second (treatment) group
-scale_2 <- 1.5
+scale_2 <- 1.6
 
 calculate_logrank_power <- function(params) {
   # print(params)
@@ -58,13 +58,48 @@ for (shape in shape_list) {
   }
 }
 
+# 3D plot of results
 fig <- plot_ly(results, x = ~shape, y = ~p_cens, z = ~power, color = ~p_cens)
 
 fig <- fig %>% add_markers()
 
 fig <- fig %>% layout(scene = list(xaxis = list(title = 'Shape'),
-                                   
+
                                    yaxis = list(title = 'p_cens'),
-                                   
+
                                    zaxis = list(title = 'Log-rank test power')))
 fig
+
+# 2D plots of results
+results %>% ggplot(aes(x = shape, y = power)) + geom_point(aes(colour = p_cens)) + xlab('Shape') +
+  ylab('Log-rank test power') +
+  ggtitle(label = 'Log-rank test power')
+
+# 2D plots of survival functions
+base <-
+  ggplot() +
+  xlim(0, 10)
+
+base + lapply(shape_list, function(shape) {
+  fun_name <- paste0("fun.", shape)
+  geom_function(
+    fun = pweibull,
+    aes(colour = shape),
+    args = list(
+      shape = shape,
+      scale = scale_2,
+      lower.tail = FALSE
+    )
+  )
+}) + geom_function(
+  fun = pweibull,
+  colour = "red",
+  args = list(
+    shape = 1,
+    scale = scale_1,
+    lower.tail = FALSE
+  )
+) + xlab('Time') +
+  ylab('Survival Probability') +
+  ggtitle(label = 'Survival Functions')
+
