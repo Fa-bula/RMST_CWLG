@@ -14,7 +14,6 @@ scale_1 <- 1
 scale_2 <- 1.6
 
 calculate_logrank_power <- function(params) {
-  # print(params)
   H0_rejected = c()
   for (exp in (1:N)) {
     i <- 0
@@ -61,6 +60,11 @@ for (shape in shape_list) {
 # 3D plot of results
 fig <- plot_ly(results, x = ~shape, y = ~p_cens, z = ~power, color = ~p_cens)
 
+
+
+fig <- fig %>% add_mesh(x = c(0, 0, 2, 2), y = c(0, 1, 0, 1),
+                        z = c(0.8, 0.8, 0.8, 0.8), opacity=0.4)
+
 fig <- fig %>% add_markers()
 
 fig <- fig %>% layout(scene = list(xaxis = list(title = 'Shape'),
@@ -68,11 +72,13 @@ fig <- fig %>% layout(scene = list(xaxis = list(title = 'Shape'),
                                    yaxis = list(title = 'p_cens'),
 
                                    zaxis = list(title = 'Log-rank test power')))
+
 fig
 
 # 2D plots of results
-results %>% ggplot(aes(x = shape, y = power)) + geom_point(aes(colour = p_cens)) + xlab('Shape') +
-  ylab('Log-rank test power') +
+results %>% ggplot(aes(x = shape, y = power)) + geom_point(aes(colour = p_cens)) +
+  geom_hline(yintercept = 0.8) +
+  xlab('Shape') + ylab('Log-rank test power') +
   ggtitle(label = 'Log-rank test power')
 
 # 2D plots of survival functions
