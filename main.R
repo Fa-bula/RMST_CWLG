@@ -8,13 +8,13 @@ n <- 100
 # Level of significance 
 alpha <- 0.05
 # Number of experiments
-N <- 100
+N <- 200
 # Scale parameter of first (control) group
 scale_1 <- 1
 # Scale parameter of the second (treatment) group
 scale_2 <- 1.6
 # List of shape parameters of Weibull distribution
-shape_list <- seq(1,2,0.1)
+shape_list <- seq(1,2,0.05)
 # List of censoring probabilities
 p_cens_list <- seq(0.2,0.4,0.05)
 
@@ -144,18 +144,24 @@ fig
 
 # 2D plots of results
 results %>%
-  ggplot(aes(x = shape, y = logrank_power)) +
-  geom_point(aes(colour = p_cens), size = 2) +
+  ggplot(aes(x = shape, y = logrank_power, group = p_cens)) +
+  geom_point(aes(colour = p_cens), size = 3) +
+  geom_smooth(aes(group = p_cens, colour = p_cens),
+              method = "lm",
+              linewidth = 0.5) +
   geom_hline(yintercept = 0.8) +
-  xlab('Shape') + ylab('Log-rank test power') +
-  ggtitle(label = 'Log-rank test power')
+  xlab('Shape') + ylab('Log-rank test') +
+  ggtitle(label = 'Test Power')
 
 results %>%
-  ggplot(aes(x = shape, y = maxcombo_power)) +
-  geom_point(aes(colour = p_cens), size = 2) +
+  ggplot(aes(x = shape, y = maxcombo_power, group = p_cens)) +
+  geom_point(aes(colour = p_cens), size = 3) +
+  geom_smooth(aes(group = p_cens, colour = p_cens),
+              method = "lm",
+              linewidth = 0.5) +
   geom_hline(yintercept = 0.8) +
-  xlab('Shape') + ylab('Maxcombo log-rank test power') +
-  ggtitle(label = 'MaxCombo test power')
+  xlab('Shape') + ylab('Maxcombo test') +
+  ggtitle(label = 'Test Power')
 
 # 2D plots of survival functions
 base <-
