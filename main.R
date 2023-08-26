@@ -3,6 +3,8 @@ library("survminer")
 library("plotly")
 library("nph")
 
+source("calculate_power_cc.R")
+
 # Number of observations in each treatment groups
 n <- 100
 # Level of significance 
@@ -18,71 +20,24 @@ shape_list <- seq(1,2,0.05)
 # List of censoring probabilities
 p_cens_list <- seq(0.2,0.4,0.05)
 
-calculate_power <- function(params) {
-  H0_rejected_logrank = c()
-  H0_rejected_maxcombo = c()
-  for (exp in (1:N)) {
-    i <- 0
-    df <- data.frame()
-    for (par in params) {
-      i <- i + 1
-      begin <- 1 + (i - 1) * n
-      end <- n + (i - 1) * n
-      shape <- par[1]
-      scale <- par[2]
-      p_cens <- par[3]
-      aval <- rweibull(n = n, shape = shape, scale = scale)
-      event <- rbinom(n, 1, 1 - p_cens)
-      cohort <- sprintf("WEIBULL-%.2f-%.2f", shape, scale)
-      
-      usubjid <- sprintf("SUBJ-%03d", begin:end)
-      df <-
-        rbind(df, data.frame(usubjid, cohort, aval, event, scale, shape))
-    }
-    
-    logrank_pval <- survdiff(Surv(time = aval,
-                                  event = event,
-                                  type = 'right') ~ cohort,
-                             data = df)$pvalue
-
-    maxcombo_pval <- logrank.maxtest(df$aval,
-                                     df$event,
-                                     df$cohort,
-                                     "two.sided")$pmult
-    
-    H0_rejected_logrank <-
-      append(H0_rejected_logrank, logrank_pval < alpha)
-    
-    H0_rejected_maxcombo <- append(H0_rejected_maxcombo,
-                                   maxcombo_pval < alpha)
-  }
-  
-  newList <-
-    list(
-      "logrank_power" = (sum(H0_rejected_logrank) / length(H0_rejected_logrank)),
-      "maxcombo_power" = (sum(H0_rejected_maxcombo) / length(H0_rejected_maxcombo))
-    )
-  return(newList)
-}
-
-results <- data.frame()
+cc_results <- data.frame()
 for (shape in shape_list) {
   for (p_cens in p_cens_list) {
     # Parameters of generated data
     params <- list()
     params[[1]] <- c(1, scale_1, p_cens)
     params[[2]] <- c(shape, scale_2, p_cens)
-    powers <- calculate_power(params=params)
-    logrank_power <- powers$logrank_power
-    maxcombo_power <- powers$maxcombo_power
-    results <-
-      rbind(results,
+    cc_powers <- calculate_power_cc(params=params)
+    logrank_power <- cc_powers$logrank_power
+    maxcombo_power <- cc_powers$maxcombo_power
+    cc_results <-
+      rbind(cc_results,
             data.frame(shape, p_cens, logrank_power, maxcombo_power))
   }
 }
 
 # 3D plot of results
-fig <- plot_ly(results, x = ~shape, y = ~p_cens, z = ~logrank_power, color = ~p_cens)
+fig <- plot_ly(cc_results, x = ~shape, y = ~p_cens, z = ~logrank_power, color = ~p_cens)
 
 fig <-
   fig %>% add_mesh(
@@ -112,7 +67,7 @@ fig <- fig %>% layout(scene = list(xaxis = list(title = 'Shape'),
 
 fig
 
-fig <- plot_ly(results, x = ~shape, y = ~p_cens, z = ~maxcombo_power, color = ~p_cens)
+fig <- plot_ly(cc_results, x = ~shape, y = ~p_cens, z = ~maxcombo_power, color = ~p_cens)
 
 fig <-
   fig %>% add_mesh(
@@ -143,25 +98,25 @@ fig <- fig %>% layout(scene = list(xaxis = list(title = 'Shape'),
 fig
 
 # 2D plots of results
-results %>%
+cc_results %>%
   ggplot(aes(x = shape, y = logrank_power, group = p_cens)) +
   geom_point(aes(colour = p_cens), size = 3) +
   geom_smooth(aes(group = p_cens, colour = p_cens),
               method = "lm",
               linewidth = 0.5) +
   geom_hline(yintercept = 0.8) +
-  xlab('Shape') + ylab('Log-rank test') +
-  ggtitle(label = 'Test Power')
+  xlab('Shape') + ylab('Test Power') +
+  ggtitle(label = 'Log-rank test')
 
-results %>%
+cc_results %>%
   ggplot(aes(x = shape, y = maxcombo_power, group = p_cens)) +
   geom_point(aes(colour = p_cens), size = 3) +
   geom_smooth(aes(group = p_cens, colour = p_cens),
               method = "lm",
               linewidth = 0.5) +
   geom_hline(yintercept = 0.8) +
-  xlab('Shape') + ylab('Maxcombo test') +
-  ggtitle(label = 'Test Power')
+  xlab('Shape') + ylab('Test Power') +
+  ggtitle(label = 'Maxcombo test')
 
 # 2D plots of survival functions
 base <-
