@@ -1,7 +1,8 @@
 library("survival")
-library("survminer")
 library("plotly")
 library("nph")
+library("grid")
+library("gridExtra")
 
 source("calculate_power_cc.R")
 source("calculate_power_le.R")
@@ -121,27 +122,27 @@ fig <- fig %>% layout(scene = list(xaxis = list(title = 'Shape'),
 fig
 
 # 2D plots of results
-cc_results %>%
+cc_results_LR <- cc_results %>%
   ggplot(aes(x = shape, y = logrank_power, group = p_cens)) +
   geom_point(aes(colour = p_cens), size = 3) +
   geom_smooth(aes(group = p_cens, colour = p_cens),
               method = "lm",
               linewidth = 0.5) +
   geom_hline(yintercept = 0.8) +
-  xlab('Shape') + ylab('Test Power') +
+  xlab('Shape') + ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
   ggtitle(label = 'Log-rank test')
 
-cc_results %>%
+cc_results_MC <- cc_results %>%
   ggplot(aes(x = shape, y = maxcombo_power, group = p_cens)) +
   geom_point(aes(colour = p_cens), size = 3) +
   geom_smooth(aes(group = p_cens, colour = p_cens),
               method = "lm",
               linewidth = 0.5) +
   geom_hline(yintercept = 0.8) +
-  xlab('Shape') + ylab('Test Power') +
+  xlab('Shape') + ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
   ggtitle(label = 'Maxcombo test')
 
-le_results %>%
+le_results_LR <- le_results %>%
   ggplot(aes(x = effect_time, y = logrank_power, group = p_cens)) +
   geom_point(aes(colour = p_cens), size = 3) +
   geom_smooth(aes(group = p_cens, colour = p_cens),
@@ -152,7 +153,7 @@ le_results %>%
   ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
   ggtitle(label = 'Log-rank test')
 
-le_results %>%
+le_results_MC <- le_results %>%
   ggplot(aes(x = effect_time, y = maxcombo_power, group = p_cens)) +
   geom_point(aes(colour = p_cens), size = 3) +
   geom_smooth(aes(group = p_cens, colour = p_cens),
@@ -168,7 +169,7 @@ base <-
   ggplot() +
   xlim(0, 10)
 
-base + lapply(shape_list, function(shape) {
+cc_survival <- base + lapply(shape_list, function(shape) {
   fun_name <- paste0("fun.", shape)
   geom_function(
     fun = pweibull,
@@ -207,24 +208,37 @@ base <-
   ggplot() +
   xlim(0, 10)
 
-base + lapply(effect_time_list, function(effect_time) {
-  fun_name <- paste0("fun.", effect_time)
-  geom_function(
-    fun = pexp_le,
-    aes(colour = effect_time),
-    args = list(
-      scale_1 = 1,
-      scale_2 = 0.5,
-      effect_time = effect_time
+le_survival <-
+  base + lapply(effect_time_list, function(effect_time) {
+    fun_name <- paste0("fun.", effect_time)
+    geom_function(
+      fun = pexp_le,
+      aes(colour = effect_time),
+      args = list(
+        scale_1 = 1,
+        scale_2 = 0.5,
+        effect_time = effect_time
+      )
     )
-  )
-}) + geom_function(
-  fun = pexp,
-  colour = "red",
-  args = list(
-    rate = 1,
-    lower.tail = FALSE
-  )
-)+ xlab('Time') +
+  }) + geom_function(
+    fun = pexp,
+    colour = "red",
+    args = list(rate = 1,
+                lower.tail = FALSE)
+  ) + xlab('Time') +
   ylab('Survival Probability') +
   ggtitle(label = 'Survival Functions')
+
+grid.arrange(cc_results_LR,
+             cc_results_MC,
+             cc_survival,
+             ncol = 2,
+             top = textGrob("Crossing Curves",
+                             gp=gpar(fontsize=17)))
+
+grid.arrange(le_results_LR,
+             le_results_MC,
+             le_survival,
+             ncol = 2,
+             top = textGrob("Late Effect",
+                            gp=gpar(fontsize=17)))
