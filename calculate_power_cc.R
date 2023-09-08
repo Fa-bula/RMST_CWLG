@@ -20,10 +20,12 @@ calculate_power_cc <- function(params) {
         rbind(df, data.frame(usubjid, cohort, aval, event, scale, shape))
     }
     
-    logrank_pval <- survdiff(Surv(time = aval,
-                                  event = event,
-                                  type = 'right') ~ cohort,
-                             data = df)$pvalue
+    diff <- survdiff(Surv(time = aval,
+                          event = event,
+                          type = 'right') ~ cohort,
+                     data = df)
+    
+    logrank_pval = pchisq(diff$chisq, length(diff$n)-1, lower.tail = FALSE)
     
     maxcombo_pval <- logrank.maxtest(df$aval,
                                      df$event,
