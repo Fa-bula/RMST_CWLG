@@ -158,7 +158,7 @@ le_results_LR <- le_results %>%
   geom_hline(yintercept = 0.8) +
   xlab('Effect Time') +
   ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
-  ggtitle(label = 'Log-rank test')
+  ggtitle(label = 'Log-rank test') + guides(color = guide_legend(title = "Users By guides"))
 
 le_results_MC <- le_results %>%
   ggplot(aes(x = effect_time, y = maxcombo_power, group = p_cens)) +
@@ -176,6 +176,7 @@ base <-
   ggplot() +
   xlim(0, 10)
 
+
 cc_survival <- base + lapply(shape_list, function(shape) {
   fun_name <- paste0("fun.", shape)
   geom_function(
@@ -187,15 +188,16 @@ cc_survival <- base + lapply(shape_list, function(shape) {
       lower.tail = FALSE
     )
   )
-}) + geom_function(
-  fun = pweibull,
-  colour = "red",
-  args = list(
-    shape = 1,
-    scale = scale_1,
-    lower.tail = FALSE
-  )
-) + xlab('Time') +
+}) + scale_color_gradient(low = "#00FF00", high = "darkgreen") +
+  geom_function(
+    fun = pweibull,
+    colour = "red",
+    args = list(
+      shape = 1,
+      scale = scale_1,
+      lower.tail = FALSE
+    )
+  ) + xlab('Time') +
   ylab('Survival Probability') +
   ggtitle(label = 'Survival Functions')
 
@@ -204,19 +206,16 @@ cc_hazard <- base + lapply(shape_list, function(shape) {
   geom_function(
     fun = hweibull,
     aes(colour = shape),
-    args = list(
-      shape = shape,
-      scale = scale_2_cc
-    )
+    args = list(shape = shape,
+                scale = scale_2_cc)
   )
-}) + geom_function(
-  fun = hweibull,
-  colour = "red",
-  args = list(
-    shape = 1,
-    scale = scale_1
-  )
-) + xlab('Time') +
+}) + scale_color_gradient(low = "#00FF00", high = "darkgreen") +
+  geom_function(
+    fun = hweibull,
+    colour = "red",
+    args = list(shape = 1,
+                scale = scale_1)
+  ) + xlab('Time') +
   ylab('Hazard') +
   ggtitle(label = 'Hazard Functions')
 
@@ -248,7 +247,8 @@ le_survival <-
         effect_time = effect_time
       )
     )
-  }) + geom_function(
+  }) + scale_color_gradient(low = "#00FF00", high = "darkgreen") +
+  geom_function(
     fun = pexp,
     colour = "red",
     args = list(rate = rate_1_le,
@@ -257,8 +257,10 @@ le_survival <-
   ylab('Survival Probability') +
   ggtitle(label = 'Survival Functions')
 
+
+
 le_hazard <- ggplot() +
-  xlim(0, 2) + lapply(effect_time_list, function(effect_time) {
+  xlim(-0.001, 2) + lapply(effect_time_list, function(effect_time) {
     fun_name <- paste0("fun.", effect_time)
     geom_function(
       fun = function(x, rate_1, rate_2, effect_time) {
@@ -271,7 +273,8 @@ le_hazard <- ggplot() +
         effect_time = effect_time
       )
     )
-  }) + geom_function(
+  }) + scale_color_gradient(low = "#00FF00", high = "darkgreen") +
+  geom_function(
     fun = function(x, rate_1) {
       return(rate_1)
     },
@@ -281,18 +284,36 @@ le_hazard <- ggplot() +
   ylab('Hazard') +
   ggtitle(label = 'Hazard Functions')
 
-grid.arrange(cc_results_LR,
-             cc_results_MC,
-             cc_survival,
-             cc_hazard,
-             ncol = 2,
-             top = textGrob("Crossing Curves",
-                             gp=gpar(fontsize=17)))
+grid.arrange(
+  cc_results_LR,
+  cc_results_MC,
+  cc_survival,
+  cc_hazard,
+  ncol = 2,
+  top = textGrob("Crossing Curves",
+                 gp = gpar(fontsize = 17)),
+  bottom = textGrob(
+    sprintf(
+      "Control group (red): ~exp(1)\n Treatment groups(green): Weibull(%.1f, shape)",
+      scale_2_cc
+    ),
+    gp = gpar(fontsize = 10)
+  )
+)
 
-grid.arrange(le_results_LR,
-             le_results_MC,
-             le_survival,
-             le_hazard,
-             ncol = 2,
-             top = textGrob("Late Effect",
-                            gp=gpar(fontsize=17)))
+grid.arrange(
+  le_results_LR,
+  le_results_MC,
+  le_survival,
+  le_hazard,
+  ncol = 2,
+  top = textGrob("Late Effect",
+                 gp = gpar(fontsize = 17)),
+  bottom = textGrob(expression(
+    paste(
+      "Control group (red): ~exp(1)\nTreatment groups(green): ~exp(1) before t" ["effect"],
+      ", ~exp(0.5) thereafter"
+    )
+  ),
+  gp = gpar(fontsize = 10))
+)
