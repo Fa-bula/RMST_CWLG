@@ -4,6 +4,7 @@ library("nph")
 library("grid")
 library("gridExtra")
 library("eha")
+library("survRM2")
 
 source("calculate_power_cc.R")
 source("calculate_power_le.R")
@@ -13,7 +14,7 @@ n <- 100
 # Level of significance 
 alpha <- 0.05
 # Number of experiments
-N <- 200
+N <- 100
 # Scale parameter of first (control) group
 scale_1 <- 1
 
@@ -32,12 +33,13 @@ for (shape in shape_list) {
     params <- list()
     params[[1]] <- c(1, scale_1, p_cens)
     params[[2]] <- c(shape, scale_2_cc, p_cens)
-    cc_powers <- calculate_power_cc(params=params)
+    cc_powers <-calculate_power_cc(params=params)
     logrank_power <- cc_powers$logrank_power
     maxcombo_power <- cc_powers$maxcombo_power
+    rmst_power <- cc_powers$rmst_power
     cc_results <-
       rbind(cc_results,
-            data.frame(shape, p_cens, logrank_power, maxcombo_power))
+            data.frame(shape, p_cens, logrank_power, maxcombo_power, rmst_power))
   }
 }
 
@@ -61,9 +63,10 @@ for (effect_time in effect_time_list) {
     le_powers <- calculate_power_le(params=params)
     logrank_power <- le_powers$logrank_power
     maxcombo_power <- le_powers$maxcombo_power
+    rmst_power <- le_powers$rmst_power
     le_results <-
       rbind(le_results,
-            data.frame(effect_time, p_cens, logrank_power, maxcombo_power))
+            data.frame(effect_time, p_cens, logrank_power, maxcombo_power, rmst_power))
   }
 }
 
@@ -137,7 +140,8 @@ cc_results_LR <- cc_results %>%
               linewidth = 0.5) +
   geom_hline(yintercept = 0.8) +
   xlab('Shape') + ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
-  ggtitle(label = 'Log-rank test')
+  ggtitle(label = 'Log-rank test') + 
+  guides(color = guide_legend(title = "Censoring probability"))
 
 cc_results_MC <- cc_results %>%
   ggplot(aes(x = shape, y = maxcombo_power, group = p_cens)) +
@@ -147,7 +151,19 @@ cc_results_MC <- cc_results %>%
               linewidth = 0.5) +
   geom_hline(yintercept = 0.8) +
   xlab('Shape') + ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
-  ggtitle(label = 'Maxcombo test')
+  ggtitle(label = 'Maxcombo test') + 
+  guides(color = guide_legend(title = "Censoring probability"))
+
+cc_results_RMST <- cc_results %>%
+  ggplot(aes(x = shape, y = rmst_power, group = p_cens)) +
+  geom_point(aes(colour = p_cens), size = 3) +
+  geom_smooth(aes(group = p_cens, colour = p_cens),
+              method = "lm",
+              linewidth = 0.5) +
+  geom_hline(yintercept = 0.8) +
+  xlab('Shape') + ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
+  ggtitle(label = 'RMST test') + 
+  guides(color = guide_legend(title = "Censoring probability"))
 
 le_results_LR <- le_results %>%
   ggplot(aes(x = effect_time, y = logrank_power, group = p_cens)) +
@@ -158,7 +174,8 @@ le_results_LR <- le_results %>%
   geom_hline(yintercept = 0.8) +
   xlab('Effect Time') +
   ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
-  ggtitle(label = 'Log-rank test') + guides(color = guide_legend(title = "Users By guides"))
+  ggtitle(label = 'Log-rank test') + 
+  guides(color = guide_legend(title = "Censoring probability"))
 
 le_results_MC <- le_results %>%
   ggplot(aes(x = effect_time, y = maxcombo_power, group = p_cens)) +
@@ -169,7 +186,20 @@ le_results_MC <- le_results %>%
   geom_hline(yintercept = 0.8) +
   xlab('Effect Time') +
   ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
-  ggtitle(label = 'Maxcombo test')
+  ggtitle(label = 'Maxcombo test') + 
+  guides(color = guide_legend(title = "Censoring probability"))
+
+le_results_RMST <- le_results %>%
+  ggplot(aes(x = effect_time, y = rmst_power, group = p_cens)) +
+  geom_point(aes(colour = p_cens), size = 3) +
+  geom_smooth(aes(group = p_cens, colour = p_cens),
+              method = "lm",
+              linewidth = 0.5) +
+  geom_hline(yintercept = 0.8) +
+  xlab('Effect Time') +
+  ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
+  ggtitle(label = 'RMST test') + 
+  guides(color = guide_legend(title = "Censoring probability"))
 
 # 2D plots of survival functions
 base <-
@@ -199,7 +229,8 @@ cc_survival <- base + lapply(shape_list, function(shape) {
     )
   ) + xlab('Time') +
   ylab('Survival Probability') +
-  ggtitle(label = 'Survival Functions')
+  ggtitle(label = 'Survival Functions') + 
+  guides(color = guide_legend(title = "Shape"))
 
 cc_hazard <- base + lapply(shape_list, function(shape) {
   fun_name <- paste0("fun.", shape)
@@ -217,7 +248,8 @@ cc_hazard <- base + lapply(shape_list, function(shape) {
                 scale = scale_1)
   ) + xlab('Time') +
   ylab('Hazard') +
-  ggtitle(label = 'Hazard Functions')
+  ggtitle(label = 'Hazard Functions') + 
+  guides(color = guide_legend(title = "Shape"))
 
 # 2D plots of survival functions for late effect
 pexp_le <- function(q, rate_1, rate_2, effect_time) {
@@ -255,7 +287,9 @@ le_survival <-
                 lower.tail = FALSE)
   ) + xlab('Time') +
   ylab('Survival Probability') +
-  ggtitle(label = 'Survival Functions')
+  ggtitle(label = 'Survival Functions')+ 
+  guides(color = guide_legend(title = expression(
+    paste("t" ["effect"]))))
 
 
 
@@ -282,14 +316,17 @@ le_hazard <- ggplot() +
     args = list(rate_1 = rate_1_le)
   ) + xlab('Time') +
   ylab('Hazard') +
-  ggtitle(label = 'Hazard Functions')
+  ggtitle(label = 'Hazard Functions')+ 
+  guides(color = guide_legend(title = expression(
+    paste("t" ["effect"]))))
 
 grid.arrange(
   cc_results_LR,
   cc_results_MC,
+  cc_results_RMST,
   cc_survival,
   cc_hazard,
-  ncol = 2,
+  ncol = 3,
   top = textGrob("Crossing Curves",
                  gp = gpar(fontsize = 17)),
   bottom = textGrob(
@@ -304,9 +341,10 @@ grid.arrange(
 grid.arrange(
   le_results_LR,
   le_results_MC,
+  le_results_RMST,
   le_survival,
   le_hazard,
-  ncol = 2,
+  ncol = 3,
   top = textGrob("Late Effect",
                  gp = gpar(fontsize = 17)),
   bottom = textGrob(expression(
