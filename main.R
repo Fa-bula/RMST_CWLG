@@ -8,30 +8,14 @@ library("survRM2")
 
 source("calculate_power_cc.R")
 source("calculate_power_le.R")
-
-# Number of observations in each treatment groups
-n <- 100
-# Level of significance 
-alpha <- 0.05
-# Number of experiments
-N <- 100
-# Scale parameter of first (control) group
-scale_1 <- 1
-
-# Crossing Curves Data
-# Scale parameter of the second (treatment) group
-scale_2_cc <- 1.6
-# List of shape parameters of Weibull distribution
-shape_list <- seq(1,2,0.05)
-# List of censoring probabilities
-p_cens_list <- seq(0.2,0.4,0.05)
+source("parameters.R")
 
 cc_results <- data.frame()
 for (shape in shape_list) {
   for (p_cens in p_cens_list) {
     # Parameters of generated data
     params <- list()
-    params[[1]] <- c(1, scale_1, p_cens)
+    params[[1]] <- c(1, scale_1_cc, p_cens)
     params[[2]] <- c(shape, scale_2_cc, p_cens)
     cc_powers <-calculate_power_cc(params=params)
     logrank_power <- cc_powers$logrank_power
@@ -42,16 +26,6 @@ for (shape in shape_list) {
             data.frame(shape, p_cens, logrank_power, maxcombo_power, rmst_power))
   }
 }
-
-# Late Effect Data
-# Rate parameter of the first (control) group
-rate_1_le <- 1
-# Rate parameter of the second (treatment) group after effect_time
-rate_2_le <- 0.5
-# List of effect times
-effect_time_list <- seq(0,0.6,0.05)
-# List of censoring probabilities
-p_cens_list <- seq(0.2,0.4,0.05)
 
 le_results <- data.frame()
 for (effect_time in effect_time_list) {
@@ -70,67 +44,7 @@ for (effect_time in effect_time_list) {
   }
 }
 
-# 3D plot of results
-fig <- plot_ly(cc_results, x = ~shape, y = ~p_cens, z = ~logrank_power, color = ~p_cens)
-
-fig <-
-  fig %>% add_mesh(
-    x = c(
-      min(shape_list),
-      min(shape_list),
-      max(shape_list),
-      max(shape_list)
-    ),
-    y = c(
-      min(p_cens_list),
-      max(p_cens_list),
-      min(p_cens_list),
-      max(p_cens_list)
-    ),
-    z = c(0.8, 0.8, 0.8, 0.8),
-    opacity = 0.4
-  )
-
-fig <- fig %>% add_markers()
-
-fig <- fig %>% layout(scene = list(xaxis = list(title = 'Shape'),
-
-                                   yaxis = list(title = 'p_cens'),
-
-                                   zaxis = list(title = 'Log-rank test power')))
-
-fig
-
-fig <- plot_ly(cc_results, x = ~shape, y = ~p_cens, z = ~maxcombo_power, color = ~p_cens)
-
-fig <-
-  fig %>% add_mesh(
-    x = c(
-      min(shape_list),
-      min(shape_list),
-      max(shape_list),
-      max(shape_list)
-    ),
-    y = c(
-      min(p_cens_list),
-      max(p_cens_list),
-      min(p_cens_list),
-      max(p_cens_list)
-    ),
-    z = c(0.8, 0.8, 0.8, 0.8),
-    opacity = 0.4
-  )
-
-fig <- fig %>% add_markers()
-
-fig <- fig %>% layout(scene = list(xaxis = list(title = 'Shape'),
-                                   
-                                   yaxis = list(title = 'p_cens'),
-                                   
-                                   zaxis = list(title = 'MaxCombo test power')))
-
-fig
-
+# 2D plot of results
 
 cc_plots <- lapply(list(
   list(var = "logrank_power" , title = "Log-rank test"),
@@ -149,7 +63,7 @@ function (description) {
         linewidth = 0.5
       ) +
       geom_hline(yintercept = 0.8) +
-      xlab('Shape') + ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
+      xlab('Shape') + ylab('Test Power') + scale_y_continuous(limits = c(0, 1.1)) +
       ggtitle(label = description[["title"]]) +
       guides(color = guide_legend(title = "Censoring probability"))
   )
@@ -181,7 +95,7 @@ function (description) {
 # 2D plots of survival functions
 base <-
   ggplot() +
-  xlim(0, 2)
+  xlim(0, 5)
 
 
 cc_survival <- base + lapply(shape_list, function(shape) {
@@ -201,7 +115,7 @@ cc_survival <- base + lapply(shape_list, function(shape) {
     colour = "red",
     args = list(
       shape = 1,
-      scale = scale_1,
+      scale = scale_1_cc,
       lower.tail = FALSE
     )
   ) + xlab('Time') +
@@ -222,7 +136,7 @@ cc_hazard <- base + lapply(shape_list, function(shape) {
     fun = hweibull,
     colour = "red",
     args = list(shape = 1,
-                scale = scale_1)
+                scale = scale_1_cc)
   ) + xlab('Time') +
   ylab('Hazard') +
   ggtitle(label = 'Hazard Functions') + 
@@ -239,6 +153,10 @@ pexp_le <- function(q, rate_1, rate_2, effect_time) {
       pexp(q - effect_time, rate = rate_2, lower.tail = FALSE)
   ))
 }
+
+base <-
+  ggplot() +
+  xlim(0, 1)
 
 le_survival <-
   base + lapply(effect_time_list, function(effect_time) {
