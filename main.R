@@ -9,6 +9,7 @@ library("survRM2")
 source("calculate_power_cc.R")
 source("calculate_power_le.R")
 source("parameters.R")
+source("run_tests.R")
 
 cc_results <- data.frame()
 for (shape in shape_list) {
@@ -28,7 +29,7 @@ for (shape in shape_list) {
 }
 
 le_results <- data.frame()
-for (effect_time in effect_time_list) {
+for (effect_time in effect_time_list_le) {
   for (p_cens in p_cens_list) {
     # Parameters of generated data
     params <- list()
@@ -86,7 +87,7 @@ function (description) {
         linewidth = 0.5
       ) +
       geom_hline(yintercept = 0.8) +
-      xlab('Shape') + ylab('Effect Time') + scale_y_continuous(limits = c(0.4, 1.1)) +
+      xlab('Effect Time') + ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
       ggtitle(label = description[["title"]]) +
       guides(color = guide_legend(title = "Censoring probability"))
   )
@@ -159,7 +160,7 @@ base <-
   xlim(0, 1)
 
 le_survival <-
-  base + lapply(effect_time_list, function(effect_time) {
+  base + lapply(effect_time_list_le, function(effect_time) {
     fun_name <- paste0("fun.", effect_time)
     geom_function(
       fun = pexp_le,
@@ -183,7 +184,7 @@ le_survival <-
     paste("t" ["effect"]))))
 
 
-le_hazard <- base + lapply(effect_time_list, function(effect_time) {
+le_hazard <- base + lapply(effect_time_list_le, function(effect_time) {
     fun_name <- paste0("fun.", effect_time)
     geom_function(
       fun = function(x, rate_1, rate_2, effect_time) {

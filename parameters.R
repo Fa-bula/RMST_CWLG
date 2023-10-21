@@ -21,6 +21,4 @@ rate_1_le <- 1
 # Rate parameter of the second (treatment) group after effect_time
 rate_2_le <- 0.5
 # List of effect times
-effect_time_list <- seq(0,0.6,0.05)
-# List of censoring probabilities
-p_cens_list <- seq(0.2,0.4,0.05)
+effect_time_list_le <- seq(0,0.6,0.05)

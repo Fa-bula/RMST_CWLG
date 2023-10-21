@@ -1,7 +1,5 @@
 calculate_power_cc <- function(params) {
-  H0_rejected_logrank = c()
-  H0_rejected_maxcombo = c()
-  H0_rejected_rmst = c()
+  H0_rejected <- data.frame()
   for (exp in (1:N)) {
     i <- 0
     df <- data.frame()
@@ -20,37 +18,23 @@ calculate_power_cc <- function(params) {
       df <-
         rbind(df, data.frame(usubjid, cohort, arm, aval, event, scale, shape))
     }
-    
-    diff <- survdiff(Surv(time = aval,
-                          event = event,
-                          type = 'right') ~ cohort,
-                     data = df)
-    
-    logrank_pval = pchisq(diff$chisq, length(diff$n)-1, lower.tail = FALSE)
-    
-    maxcombo_pval <- logrank.maxtest(df$aval,
-                                     df$event,
-                                     df$cohort,
-                                     "two.sided")$pmult
-    
-    rmst_pval <- rmst2(time=df$aval, status=df$event, alpha=alpha,
-                       arm=df$arm)[5]$unadjusted.result[1,4]
-    
-    H0_rejected_logrank <-
-      append(H0_rejected_logrank, logrank_pval < alpha)
-    
-    H0_rejected_maxcombo <- append(H0_rejected_maxcombo,
-                                   maxcombo_pval < alpha)
-    
-    H0_rejected_rmst <- append(H0_rejected_rmst,
-                               rmst_pval < alpha)
+    pvals <- run_tests(df)
+    H0_rejected <-
+      rbind(
+        H0_rejected,
+        data.frame(
+          logrank = pvals$logrank_pval < alpha,
+          maxcombo = pvals$maxcombo_pval < alpha,
+          rmst = pvals$rmst_pval < alpha
+        )
+      )
   }
   
-  newList <-
+  results <-
     list(
-      "logrank_power" = (sum(H0_rejected_logrank) / length(H0_rejected_logrank)),
-      "maxcombo_power" = (sum(H0_rejected_maxcombo) / length(H0_rejected_maxcombo)),
-      "rmst_power" = (sum(H0_rejected_rmst) / length(H0_rejected_rmst))
+      "logrank_power" = (sum(H0_rejected$logrank) / length(H0_rejected$logrank)),
+      "maxcombo_power" = (sum(H0_rejected$maxcombo) / length(H0_rejected$maxcombo)),
+      "rmst_power" = (sum(H0_rejected$rmst) / length(H0_rejected$rmst))
     )
-  return(newList)
+  return(results)
 }
