@@ -45,8 +45,24 @@ for (effect_time in effect_time_list_le) {
   }
 }
 
-# 2D plot of results
+ee_results <- data.frame()
+for (effect_time in effect_time_list_ee) {
+  for (p_cens in p_cens_list) {
+    # Parameters of generated data
+    params <- list()
+    params[[1]] <- c(rate_1_ee, rate_1_ee, 0, p_cens)
+    params[[2]] <- c(rate_2_ee, rate_1_ee, effect_time, p_cens)
+    ee_powers <- calculate_power_le(params=params)
+    logrank_power <- ee_powers$logrank_power
+    maxcombo_power <- ee_powers$maxcombo_power
+    rmst_power <- ee_powers$rmst_power
+    ee_results <-
+      rbind(ee_results,
+            data.frame(effect_time, p_cens, logrank_power, maxcombo_power, rmst_power))
+  }
+}
 
+# 2D plot of results
 cc_plots <- lapply(list(
   list(var = "logrank_power" , title = "Log-rank test"),
   list(var = "maxcombo_power", title = "Maxcombo test"),
@@ -88,6 +104,29 @@ function (description) {
       ) +
       geom_hline(yintercept = 0.8) +
       xlab('Effect Time') + ylab('Test Power') + scale_y_continuous(limits = c(0.4, 1.1)) +
+      ggtitle(label = description[["title"]]) +
+      guides(color = guide_legend(title = "Censoring probability"))
+  )
+})
+
+ee_plots <- lapply(list(
+  list(var = "logrank_power" , title = "Log-rank test"),
+  list(var = "maxcombo_power", title = "Maxcombo test"),
+  list(var = "rmst_power", title = "RMST test")
+),
+function (description) {
+  return(
+    ee_results %>% ggplot(aes(
+      x = effect_time, y = !!sym(description[["var"]])
+    )) +
+      geom_point(aes(colour = p_cens), size = 3) +
+      geom_smooth(
+        aes(group = p_cens, colour = p_cens),
+        method = "lm",
+        linewidth = 0.5
+      ) +
+      geom_hline(yintercept = 0.8) +
+      xlab('Effect Time') + ylab('Test Power') + scale_y_continuous(limits = c(0, 1.1)) +
       ggtitle(label = description[["title"]]) +
       guides(color = guide_legend(title = "Censoring probability"))
   )
@@ -236,6 +275,23 @@ grid.arrange(
   le_hazard,
   ncol = 3,
   top = textGrob("Late Effect",
+                 gp = gpar(fontsize = 17)),
+  bottom = textGrob(expression(
+    paste(
+      "Control group (red): ~exp(1)\nTreatment groups(green): ~exp(1) before t" ["effect"],
+      ", ~exp(0.5) thereafter"
+    )
+  ),
+  gp = gpar(fontsize = 10))
+)
+
+
+grid.arrange(
+  ee_plots[[1]],
+  ee_plots[[2]],
+  ee_plots[[3]],
+  ncol = 3,
+  top = textGrob("Early Effect",
                  gp = gpar(fontsize = 17)),
   bottom = textGrob(expression(
     paste(

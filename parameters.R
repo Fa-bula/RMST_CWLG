@@ -22,3 +22,11 @@ rate_1_le <- 1
 rate_2_le <- 0.5
 # List of effect times
 effect_time_list_le <- seq(0,0.6,0.05)
+
+# Early Effect Data
+# Rate parameter of the first (control) group
+rate_1_ee <- 1
+# Rate parameter of the second (treatment) group before effect_time
+rate_2_ee <- 0.4
+# List of effect times
+effect_time_list_ee <- seq(0.3,1,0.05)
