@@ -1,5 +1,5 @@
 # Number of observations in each treatment groups
-n <- 100
+n_list <- c(50, 100, 200)
 # Level of significance 
 alpha <- 0.05
 # Number of experiments
