@@ -12,11 +12,17 @@ calculate_power_cc <- function(params) {
       p_cens <- par[3]
       aval <- rweibull(n = n, shape = shape, scale = scale)
       event <- rbinom(n, 1, 1 - p_cens)
+      # Censoring by end of trial
+      le_trial_duration <- aval <= t_duration
+      aval <- ifelse(aval > t_duration, t_duration, aval)
+      event <- event & le_trial_duration
+      
       cohort <- sprintf("WEIBULL-%.2f-%.2f", shape, scale)
       arm <- i - 1
       usubjid <- sprintf("SUBJ-%03d", begin:end)
       df <-
-        rbind(df, data.frame(usubjid, cohort, arm, aval, event, scale, shape))
+        rbind(df,
+              data.frame(usubjid, cohort, arm, aval, event, scale, shape, t_duration))
     }
     pvals <- run_tests(df)
     H0_rejected <-

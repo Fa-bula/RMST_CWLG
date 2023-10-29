@@ -1,5 +1,9 @@
 # Number of observations in each treatment groups
 n_list <- c(50, 100, 200)
+# List of censoring probabilities
+p_cens_list <- seq(0.2,0.4,0.05)
+# Trial Duration
+t_duration_list <- c(0.8, 1, 3)
 # Level of significance 
 alpha <- 0.05
 # Number of experiments
@@ -12,8 +16,6 @@ scale_1_cc <- 1
 scale_2_cc <- 1.4
 # List of shape parameters of Weibull distribution
 shape_list <- seq(1,2.5,0.1)
-# List of censoring probabilities
-p_cens_list <- seq(0.2,0.4,0.05)
 
 # Late Effect Data
 # Rate parameter of the first (control) group
