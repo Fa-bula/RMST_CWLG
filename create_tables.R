@@ -14,6 +14,12 @@ results <- lapply(list(
     scenario_name = "(Late Effect)",
     var = "effect_time",
     filter_statement = "(effect_time * 500) %% 100 == 0 & (p_cens * 100) %% 10 == 0"
+  ),
+  list(
+    data = "ee_results" ,
+    scenario_name = "(Early Effect)",
+    var = "effect_time",
+    filter_statement = "(effect_time * 1000) %% 100 == 0 & (p_cens * 100) %% 10 == 0"
   )
 ),
 function (description) {
@@ -78,7 +84,10 @@ function (description) {
 
 
 results[[1]] |> cols_label(shape = "{{Shape}}") |>
-  gtsave("Crossing_curves.png", expand = 10)
+  gtsave("Crossing_curves.html")
 
 results[[2]] |> cols_label(effect_time = "{{t_effect}}") |>
-  gtsave("Late_effect.png", expand = 10)
+  gtsave("Late_effect.html")
+
+results[[3]] |> cols_label(effect_time = "{{t_effect}}") |>
+  gtsave("Early_effect.html")
