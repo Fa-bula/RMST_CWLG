@@ -102,7 +102,8 @@ function (description) {
   )
 })
 
-# 2D plots of survival functions
+
+# 2D plots of survival and hazard functions for crossing curves
 base <-
   ggplot() +
   xlim(0, 2)
@@ -151,7 +152,8 @@ cc_hazard <- base + lapply(shape_list, function(shape) {
   ggtitle(label = 'Hazard Functions') + 
   guides(color = guide_legend(title = "Shape"))
 
-# 2D plots of survival functions for late effect
+
+# 2D plots of survival and hazard functions for late effect
 pexp_le <- function(q, rate_1, rate_2, effect_time) {
   return(ifelse(
     q <= effect_time,
@@ -191,7 +193,6 @@ le_survival <-
   guides(color = guide_legend(title = expression(
     paste("t" ["effect"]))))
 
-
 le_hazard <- base + lapply(effect_time_list_le, function(effect_time) {
   fun_name <- paste0("fun.", effect_time)
   geom_function(
@@ -218,6 +219,59 @@ le_hazard <- base + lapply(effect_time_list_le, function(effect_time) {
   guides(color = guide_legend(title = expression(
     paste("t" ["effect"]))))
 
+
+# 2D plots of survival and hazard functions for early effect
+ee_survival <-
+  base + lapply(effect_time_list_ee, function(effect_time) {
+    fun_name <- paste0("fun.", effect_time)
+    geom_function(
+      fun = pexp_le,
+      aes(colour = effect_time),
+      args = list(
+        rate_1 = rate_2_ee,
+        rate_2 = rate_1_ee,
+        effect_time = effect_time
+      )
+    )
+  }) + scale_color_gradient(low = "#00FF00", high = "darkgreen") +
+  geom_function(
+    fun = pexp,
+    colour = "red",
+    args = list(rate = rate_1_ee,
+                lower.tail = FALSE)
+  ) + xlab('Time') +
+  ylab('Survival Probability') +
+  ggtitle(label = 'Survival Functions')+ 
+  guides(color = guide_legend(title = expression(
+    paste("t" ["effect"]))))
+
+ee_hazard <- base + lapply(effect_time_list_ee, function(effect_time) {
+  fun_name <- paste0("fun.", effect_time)
+  geom_function(
+    fun = function(x, rate_1, rate_2, effect_time) {
+      return(ifelse(x < effect_time, rate_1, rate_2))
+    },
+    aes(colour = effect_time),
+    args = list(
+      rate_1 = rate_2_ee,
+      rate_2 = rate_1_ee,
+      effect_time = effect_time
+    )
+  )
+}) + scale_color_gradient(low = "#00FF00", high = "darkgreen") +
+  geom_function(
+    fun = function(x, rate_1) {
+      return(rate_1)
+    },
+    colour = "red",
+    args = list(rate_1 = rate_1_ee)
+  ) + xlab('Time') +
+  ylab('Hazard') +
+  ggtitle(label = 'Hazard Functions')+ 
+  guides(color = guide_legend(title = expression(
+    paste("t" ["effect"]))))
+
+# Combining plots together
 for (start in 3 * seq(0, (length(n_list) * length(t_duration_list) - 1))) {
   grid.arrange(
     cc_plots[[start+1]],
@@ -263,6 +317,8 @@ for (start in 3 * seq(0, (length(n_list) * length(t_duration_list) - 1))) {
     ee_plots[[start+1]],
     ee_plots[[start+2]],
     ee_plots[[start+3]],
+    ee_survival,
+    ee_hazard,
     ncol = 3,
     top = textGrob("Early Effect",
                    gp = gpar(fontsize = 17)),
