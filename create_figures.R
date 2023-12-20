@@ -106,7 +106,7 @@ function (description) {
 # 2D plots of survival and hazard functions for crossing curves
 base <-
   ggplot() +
-  xlim(0, 2)
+  xlim(0, 5)
 
 cc_survival <- base + lapply(shape_list, function(shape) {
   fun_name <- paste0("fun.", shape)
