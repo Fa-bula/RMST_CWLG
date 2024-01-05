@@ -2,6 +2,9 @@ library("grid")
 library("gridExtra")
 library("plotly")
 library("eha")
+library("ggpubr")
+
+axis_text_size <- 8
 
 args <- list()
 for (n in n_list) {
@@ -36,20 +39,22 @@ function (description) {
       ggplot(aes(
         x = shape, y = !!sym(description[["var"]])
       )) +
-      geom_point(aes(colour = p_cens), size = 2, show.legend = FALSE) +
+      geom_point(aes(colour = p_cens), size = 1, show.legend = TRUE) +
       geom_smooth(
         aes(group = p_cens, colour = p_cens),
         method = "lm",
         linewidth = 0.5,
-        show.legend = FALSE
+        show.legend = TRUE
       ) +
       geom_hline(yintercept = 0.8) +
       xlab('Shape') + ylab('Test Power') + scale_y_continuous(limits = c(0, 1.1)) +
       ggtitle(
         label = paste0(description[["title"]], " N = ", description[["n"]],
-                                             " Trial Duration = ", description[["t_duration"]])
+                                             "\nTrial Duration = ", description[["t_duration"]])
       ) + guides(color = guide_legend(title = "Censoring probability")) +
-      theme(plot.title = element_text(size=10))
+      theme(plot.title = element_text(size=axis_text_size),
+            axis.title.x = element_text(size=axis_text_size),
+            axis.title.y = element_text(size=axis_text_size))
   )
 })
 
@@ -60,21 +65,23 @@ function (description) {
                             t_duration == description[["t_duration"]]) %>% ggplot(aes(
       x = effect_time, y = !!sym(description[["var"]])
     )) +
-      geom_point(aes(colour = p_cens), size = 3, show.legend = FALSE) +
+      geom_point(aes(colour = p_cens), size = 1, show.legend = TRUE) +
       geom_smooth(
         aes(group = p_cens, colour = p_cens),
         method = "lm",
         linewidth = 0.5,
-        show.legend = FALSE
+        show.legend = TRUE
       ) +
       geom_hline(yintercept = 0.8) +
       xlab('Effect Time') + ylab('Test Power') + scale_y_continuous(limits = c(0.0, 1.1)) +
       ggtitle(
         label = paste0(description[["title"]], " N = ", description[["n"]],
-                       " Trial Duration = ", description[["t_duration"]])
+                       "\nTrial Duration = ", description[["t_duration"]])
       ) +
       guides(color = guide_legend(title = "Censoring probability")) +
-      theme(plot.title = element_text(size=10))
+      theme(plot.title = element_text(size=axis_text_size),
+             axis.title.x = element_text(size=axis_text_size),
+             axis.title.y = element_text(size=axis_text_size))
   )
 })
 
@@ -85,20 +92,22 @@ function (description) {
                             t_duration == description[["t_duration"]]) %>% ggplot(aes(
       x = effect_time, y = !!sym(description[["var"]])
     )) +
-      geom_point(aes(colour = p_cens), size = 3) +
+      geom_point(aes(colour = p_cens), size = 1) +
       geom_smooth(
         aes(group = p_cens, colour = p_cens),
         method = "lm",
         linewidth = 0.5
       ) +
       geom_hline(yintercept = 0.8) +
-      xlab('Effect Time') + ylab('Test Power') + scale_y_continuous(limits = c(0, 1.1)) +
+      xlab('Effect Duration') + ylab('Test Power') + scale_y_continuous(limits = c(0, 1.1)) +
       ggtitle(
         label = paste0(description[["title"]], " N = ", description[["n"]],
-                       " Trial Duration = ", description[["t_duration"]])
+                       "\nTrial Duration = ", description[["t_duration"]])
       ) +
       guides(color = guide_legend(title = "Censoring probability")) +
-      theme(plot.title = element_text(size=10))
+      theme(plot.title = element_text(size=axis_text_size),
+            axis.title.x = element_text(size=axis_text_size),
+            axis.title.y = element_text(size=axis_text_size))
   )
 })
 
@@ -222,15 +231,15 @@ le_hazard <- base + lapply(effect_time_list_le, function(effect_time) {
 
 # 2D plots of survival and hazard functions for early effect
 ee_survival <-
-  base + lapply(effect_time_list_ee, function(effect_time) {
-    fun_name <- paste0("fun.", effect_time)
+  base + lapply(effect_time_list_ee, function(effect_dur) {
+    fun_name <- paste0("fun.", effect_dur)
     geom_function(
       fun = pexp_le,
-      aes(colour = effect_time),
+      aes(colour = effect_dur),
       args = list(
         rate_1 = rate_2_ee,
         rate_2 = rate_1_ee,
-        effect_time = effect_time
+        effect_time = effect_dur
       )
     )
   }) + scale_color_gradient(low = "#00FF00", high = "darkgreen") +
@@ -243,19 +252,19 @@ ee_survival <-
   ylab('Survival Probability') +
   ggtitle(label = 'Survival Functions')+ 
   guides(color = guide_legend(title = expression(
-    paste("t" ["effect"]))))
+    paste("dur" ["effect"]))))
 
-ee_hazard <- base + lapply(effect_time_list_ee, function(effect_time) {
-  fun_name <- paste0("fun.", effect_time)
+ee_hazard <- base + lapply(effect_time_list_ee, function(effect_dur) {
+  fun_name <- paste0("fun.", effect_dur)
   geom_function(
-    fun = function(x, rate_1, rate_2, effect_time) {
-      return(ifelse(x < effect_time, rate_1, rate_2))
+    fun = function(x, rate_1, rate_2, effect_dur) {
+      return(ifelse(x < effect_dur, rate_1, rate_2))
     },
-    aes(colour = effect_time),
+    aes(colour = effect_dur),
     args = list(
       rate_1 = rate_2_ee,
       rate_2 = rate_1_ee,
-      effect_time = effect_time
+      effect_dur = effect_dur
     )
   )
 }) + scale_color_gradient(low = "#00FF00", high = "darkgreen") +
@@ -269,7 +278,7 @@ ee_hazard <- base + lapply(effect_time_list_ee, function(effect_time) {
   ylab('Hazard') +
   ggtitle(label = 'Hazard Functions')+ 
   guides(color = guide_legend(title = expression(
-    paste("t" ["effect"]))))
+    paste("dur" ["effect"]))))
 
 # Combining plots together
 for (start in 3 * seq(0, (length(n_list) * length(t_duration_list) - 1))) {
@@ -325,9 +334,95 @@ for (start in 3 * seq(0, (length(n_list) * length(t_duration_list) - 1))) {
     bottom = textGrob(expression(
       paste(
         "Control group (red): ~exp(1)\nTreatment groups(green): ~exp(1) before t" ["effect"],
-        ", ~exp(0.5) thereafter"
+        ", ~exp(0.4) thereafter"
       )
     ),
     gp = gpar(fontsize = 10))
   )
 }
+
+# Combine plots for poster
+cc_res_plot <- ggarrange(
+  cc_plots[[1]],
+  cc_plots[[2]],
+  cc_plots[[3]],
+  cc_plots[[7]],
+  cc_plots[[8]],
+  cc_plots[[9]],
+  common.legend = TRUE, legend="bottom",
+  ncol = 3,
+  nrow=2)
+
+ggexport(cc_res_plot, filename = "cc_res_plot.pdf", height=4, width=6)
+
+cc_sur_haz_plot <- ggarrange(
+  cc_survival,
+  cc_hazard
+)
+
+cc_sur_haz_plot <- annotate_figure(cc_sur_haz_plot, bottom = textGrob(
+  sprintf(
+    "Control group (red): ~exp(1) Treatment groups(green): Weibull(%.1f, shape)",
+    scale_2_cc
+  ),
+  gp = gpar(fontsize = 10)
+))
+
+ggexport(cc_sur_haz_plot, filename = "cc_sur_haz_plot.pdf", height=4, width=10)
+
+ee_res_plot <- ggarrange(
+  ee_plots[[10]],
+  ee_plots[[11]],
+  ee_plots[[12]], 
+  ee_plots[[13]],
+  ee_plots[[14]],
+  ee_plots[[15]],
+  common.legend = TRUE, legend="bottom",
+  ncol = 3,
+  nrow=2)
+
+ggexport(ee_res_plot, filename = "ee_res_plot.pdf", height=4, width=10)
+
+ee_sur_haz_plot <- ggarrange(
+  ee_survival,
+  ee_hazard
+)
+
+ee_sur_haz_plot <-
+  annotate_figure(ee_sur_haz_plot, bottom = textGrob(expression(
+    paste(
+      "Control group (red): ~exp(1); Treatment groups(green): ~exp(0.4) before dur" ["effect"],
+      ", ~exp(1) thereafter"
+      )
+  )))
+
+ggexport(ee_sur_haz_plot, filename = "ee_sur_haz_plot.pdf", height=4, width=10)
+
+
+le_res_plot <- ggarrange(
+  le_plots[[10]],
+  le_plots[[11]],
+  le_plots[[12]], 
+  le_plots[[13]],
+  le_plots[[14]],
+  le_plots[[15]],
+  common.legend = TRUE, legend="bottom",
+  ncol = 3,
+  nrow=2)
+
+ggexport(le_res_plot, filename = "le_res_plot.pdf", height=4, width=10)
+
+le_sur_haz_plot <- ggarrange(
+  le_survival,
+  le_hazard
+)
+
+le_sur_haz_plot <-
+  annotate_figure(le_sur_haz_plot, bottom = textGrob(expression(
+    paste(
+      "Control group (red): ~exp(1); Treatment groups(green): ~exp(1) before t" ["effect"],
+      ", ~exp(0.5) thereafter"
+    )
+  )))
+
+ggexport(le_sur_haz_plot, filename = "le_sur_haz_plot.pdf", height=4, width=10)
