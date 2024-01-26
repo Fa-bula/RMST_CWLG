@@ -7,7 +7,7 @@ t_duration_list <- c(1, 2, 3)
 # Level of significance 
 alpha <- 0.05
 # Number of experiments
-N <- 100
+N <- 1000
 
 # Crossing Curves Data
 # Scale parameter of first (control) group
